@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ar">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>موقع زيارات Free Fire</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            background: linear-gradient(to bottom, #1a1a2e, #16213e);
+            background-attachment: fixed;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            text-align: center;
+        }
+
+        h1 {
+            color: #ffd700;
+            margin: 20px 0;
+            font-size: 2.5rem;
+            text-shadow: 2px 2px 5px rgba(0, 0, 0, 0.7);
+        }
+
+        form {
+            background-color: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            display: inline-block;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.8);
+            margin-top: 20px;
+        }
+
+        input[type="text"], input[type="number"], input[type="password"] {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #333;
+            border-radius: 5px;
+            background-color: #222;
+            color: #fff;
+            margin-top: 10px;
+        }
+
+        button {
+            background-color: #ffd700;
+            color: #000;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background-color: #ffd700;
+            transform: scale(1.05);
+        }
+
+        #results {
+            margin-top: 20px;
+            font-size: 1rem; 
+            display: none;
+        }
+
+        footer {
+            margin-top: 30px;
+            font-size: 1rem;
+            color: #ffd700;
+        }
+
+        .progress-bar {
+            background-color: #ffd700;
+            border-radius: 10px;
+            height: 20px;
+            width: 100%;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .progress {
+            background-color: #FFA500;
+            height: 100%;
+            border-radius: 10px;
+            transition: width 0.1s;
+            width: 0;
+        }
+
+        .failed {
+            color: #FF4500;
+        }
+
+        #progress-text {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #ffd700;
+        }
+    </style>
+</head>
+<body>
+    <h1>موقع زيارات Free Fire</h1>
+    
+    <form id="loginForm">
+        <label for="username">Host :</label>
+        <input type="text" id="username" name="username" required>
+        <label for="password">Port :</label>
+        <input type="password" id="password" name="password" required>
+        <button type="submit">تسجيل الدخول</button>
+    </form>
+
+    <form id="playerForm" style="display: none;">
+        <label for="player_id">أدخل معرف اللاعب :</label>
+        <input type="text" id="player_id" name="player_id" required>
+        <label for="view_count">عدد الزيارات :</label>
+        <input type="number" id="view_count" name="view_count" min="1" max="50" required>
+        <button type="submit">إرسال</button>
+    </form>
+
+    <div id="progressBar" class="progress-bar" style="display: none;">
+        <div class="progress" id="progress"></div>
+    </div>
+    <div id="progress-text" style="display: none;">0/0</div>
+
+    <div id="results"></div>
+
+    <footer>
+        <p>&copy; Developer : rbgx_moxado</p>
+    </footer>
+
+    <script>
+        $('#loginForm').on('submit', function(e) {
+            e.preventDefault();
+            const username = $('#username').val();
+            const password = $('#password').val();
+
+            $.post('/login', { username: username, password: password }, function(data) {
+                if (data.success) {
+                    $('#loginForm').hide();
+                    $('#playerForm').show();
+                } else {
+                    alert(data.error);
+                }
+            });
+        });
+
+        $('#playerForm').on('submit', function(e) {
+            e.preventDefault();
+            const playerId = $('#player_id').val();
+            const viewCount = $('#view_count').val();
+            $('#results').hide();
+            $('#progressBar').show();
+            $('#progress-text').show();
+            $('#progress-text').text(`0/${viewCount}`);
+            $('#progress').css('width', '0%'); 
+
+            let progress = 0;
+
+            // إرسال الطلبات
+            $.post('/send', { player_id: playerId, view_count: viewCount }, function(data) {
+                let resultsHtml = `<h2 style="font-size: 1.2rem;">تم ارسال زيارات الى هذا لاعب : ${data.player_name}</h2>`;
+                resultsHtml += `<p>عدد الزيارات الناجحة : ${data.total_success}</p>`;
+                resultsHtml += `<p class="failed">عدد الزيارات الفاشلة : ${data.total_failed}</p>`;
+                
+                $('#results').html(resultsHtml).show();
+                $('#progressBar').hide();
+                $('#progress-text').hide();
+            });
+
+            // تحريك شريط التقدم بناءً على الاستجابة لكل زيارة
+            const interval = setInterval(function() {
+                progress++;
+                if (progress > viewCount) {
+                    clearInterval(interval);
+                } else {
+                    const percentage = (progress / viewCount) * 100;
+                    $('#progress').css('width', percentage + '%');
+                    $('#progress-text').text(`${progress}/${viewCount}`);
+                }
+            }, 500); // تعديل السرعة حسب الحاجة (500 مللي ثانية)
+        });
+    </script>
+</body>
+</html>
